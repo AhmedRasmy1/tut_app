@@ -18,9 +18,9 @@ class OnboardingView extends StatefulWidget {
 class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
-  late final List<SliderObject> _sliders = getSliderObject();
+  late final List<SliderObject> _sliders = getSliderData();
 
-  List<SliderObject> getSliderObject() => [
+  List<SliderObject> getSliderData() => [
         SliderObject(
           title: AppStrings.onBoardingTitle1,
           subTitle: AppStrings.onBoardingSubTitle1,
@@ -69,15 +69,20 @@ class _OnboardingViewState extends State<OnboardingView> {
         child: Column(
           children: [
             Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: Text(
-                    textAlign: TextAlign.end,
-                    AppStrings.onBoardingSKip,
-                    style: Theme.of(context).textTheme.labelMedium,
-                  ),
-                ))
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: Text(
+                  textAlign: TextAlign.end,
+                  AppStrings.onBoardingSKip,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+            ),
+            BottomSheet(
+              sliders: _sliders,
+              currentIndex: _currentIndex,
+            ),
           ],
         ),
       ),
@@ -130,4 +135,63 @@ class SliderObject {
     required this.subTitle,
     required this.image,
   });
+}
+
+class BottomSheet extends StatelessWidget {
+  const BottomSheet({
+    super.key,
+    required this.sliders,
+    required this.currentIndex,
+  });
+  final List<SliderObject> sliders;
+  final int currentIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        //! left arrow
+        Padding(
+          padding: const EdgeInsets.all(AppPadding.p14),
+          child: SizedBox(
+            height: AppSize.s20,
+            width: AppSize.s20,
+            child: GestureDetector(
+              child: SvgPicture.asset(ImageAssets.leftArrowIc),
+            ),
+          ),
+        ),
+        //! circle indicator
+        Row(
+          children: [
+            for (int i = 0; i < sliders.length; i++)
+              Padding(
+                padding: const EdgeInsets.all(AppPadding.p8),
+                child: getProperCircle(i, currentIndex),
+              ),
+          ],
+        ),
+        //! right arrow
+        Padding(
+          padding: const EdgeInsets.all(AppPadding.p14),
+          child: SizedBox(
+            height: AppSize.s20,
+            width: AppSize.s20,
+            child: GestureDetector(
+              child: SvgPicture.asset(ImageAssets.leftArrowIc),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget getProperCircle(int index, int currentIndex) {
+    if (index == currentIndex) {
+      return SvgPicture.asset(ImageAssets.hollowCircleIc);
+    } else {
+      return SvgPicture.asset(ImageAssets.solidCircleIc);
+    }
+  }
 }
