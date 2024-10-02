@@ -59,8 +59,9 @@ ThemeData getApplicationTheme() {
       headlineLarge: getSemiBoldStyle(
           color: ColorManager.darkGrey, fontSize: FontSize.s16),
       titleMedium:
-          getMediumStyle(color: ColorManager.lightGrey, fontSize: FontSize.s14),
-      labelMedium: getRegularStyle(color: ColorManager.grey1),
+          getMediumStyle(color: ColorManager.darkGrey, fontSize: FontSize.s14),
+      labelMedium:
+          getMediumStyle(color: ColorManager.primary, fontSize: FontSize.s16),
       bodyLarge: getRegularStyle(color: ColorManager.grey),
       bodySmall: getRegularStyle(color: ColorManager.white),
       displayLarge: getRegularStyle(color: ColorManager.lightGrey),
@@ -92,6 +93,6 @@ ThemeData getApplicationTheme() {
 OutlineInputBorder outLintInputBorderMethod(BorderSide borderSide) {
   return OutlineInputBorder(
     borderSide: borderSide,
-    borderRadius: const BorderRadius.all(Radius.circular(AppSize.s8)),
+    borderRadius: const BorderRadius.all(Radius.circular(AppSize.s9)),
   );
 }
