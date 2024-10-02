@@ -5,6 +5,8 @@ import 'package:flutter_svg/svg.dart';
 
 import 'package:tut_app/presentation/resources/assets_manager.dart';
 import 'package:tut_app/presentation/resources/color_manager.dart';
+import 'package:tut_app/presentation/resources/constants_manager.dart';
+import 'package:tut_app/presentation/resources/routes_manager.dart';
 import 'package:tut_app/presentation/resources/strings_manager.dart';
 import 'package:tut_app/presentation/resources/values_manager.dart';
 
@@ -46,6 +48,8 @@ class _OnboardingViewState extends State<OnboardingView> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: ColorManager.white,
+        elevation: AppSize.s0,
         systemOverlayStyle: const SystemUiOverlayStyle(
           statusBarColor: ColorManager.white,
           statusBarIconBrightness: Brightness.dark,
@@ -55,9 +59,11 @@ class _OnboardingViewState extends State<OnboardingView> {
         controller: _pageController,
         itemCount: _sliders.length,
         onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          if (mounted) {
+            setState(() {
+              _currentIndex = index;
+            });
+          }
         },
         itemBuilder: (context, index) {
           return OnBoardingPage(sliderObject: _sliders[index]);
@@ -65,13 +71,18 @@ class _OnboardingViewState extends State<OnboardingView> {
       ),
       bottomSheet: Container(
         color: ColorManager.white,
-        height: AppSize.s100,
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.pushReplacementNamed(
+                    context,
+                    RoutesManager.loginRoute,
+                  );
+                },
                 child: Text(
                   textAlign: TextAlign.end,
                   AppStrings.onBoardingSKip,
@@ -82,6 +93,7 @@ class _OnboardingViewState extends State<OnboardingView> {
             BottomSheet(
               sliders: _sliders,
               currentIndex: _currentIndex,
+              controller: _pageController,
             ),
           ],
         ),
@@ -137,53 +149,100 @@ class SliderObject {
   });
 }
 
-class BottomSheet extends StatelessWidget {
+class BottomSheet extends StatefulWidget {
   const BottomSheet({
     super.key,
     required this.sliders,
     required this.currentIndex,
+    this.controller,
   });
   final List<SliderObject> sliders;
   final int currentIndex;
+  final PageController? controller;
 
   @override
+  State<BottomSheet> createState() => _BottomSheetState();
+}
+
+class _BottomSheetState extends State<BottomSheet> {
+  @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        //! left arrow
-        Padding(
-          padding: const EdgeInsets.all(AppPadding.p14),
-          child: SizedBox(
-            height: AppSize.s20,
-            width: AppSize.s20,
-            child: GestureDetector(
-              child: SvgPicture.asset(ImageAssets.leftArrowIc),
-            ),
-          ),
-        ),
-        //! circle indicator
-        Row(
-          children: [
-            for (int i = 0; i < sliders.length; i++)
-              Padding(
-                padding: const EdgeInsets.all(AppPadding.p8),
-                child: getProperCircle(i, currentIndex),
+    return Container(
+      color: ColorManager.primary,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          //! left arrow
+          Padding(
+            padding: const EdgeInsets.all(AppPadding.p14),
+            child: SizedBox(
+              height: AppSize.s20,
+              width: AppSize.s20,
+              child: GestureDetector(
+                child: SvgPicture.asset(ImageAssets.leftArrowIc),
+                onTap: () {
+                  if (widget.currentIndex > 0 && mounted) {
+                    widget.controller!.animateToPage(
+                      widget.currentIndex - 1,
+                      duration: const Duration(
+                          milliseconds: AppConstants.sliderAnimationTime),
+                      curve: Curves.bounceInOut,
+                    );
+                  }
+                  if (widget.currentIndex == -1 && mounted) {
+                    widget.controller!.animateToPage(
+                      widget.sliders.length - 1,
+                      duration: const Duration(
+                          milliseconds: AppConstants.sliderAnimationTime),
+                      curve: Curves.bounceInOut,
+                    );
+                  }
+                },
               ),
-          ],
-        ),
-        //! right arrow
-        Padding(
-          padding: const EdgeInsets.all(AppPadding.p14),
-          child: SizedBox(
-            height: AppSize.s20,
-            width: AppSize.s20,
-            child: GestureDetector(
-              child: SvgPicture.asset(ImageAssets.leftArrowIc),
             ),
           ),
-        ),
-      ],
+          //! circle indicator
+          Row(
+            children: [
+              for (int i = 0; i < widget.sliders.length; i++)
+                Padding(
+                  padding: const EdgeInsets.all(AppPadding.p8),
+                  child: getProperCircle(i, widget.currentIndex),
+                ),
+            ],
+          ),
+          //! right arrow
+          Padding(
+            padding: const EdgeInsets.all(AppPadding.p14),
+            child: SizedBox(
+              height: AppSize.s20,
+              width: AppSize.s20,
+              child: GestureDetector(
+                child: SvgPicture.asset(ImageAssets.rightArrowIc),
+                onTap: () {
+                  if (widget.currentIndex < widget.sliders.length - 1 &&
+                      mounted) {
+                    widget.controller!.animateToPage(
+                      widget.currentIndex + 1,
+                      duration: const Duration(
+                          milliseconds: AppConstants.sliderAnimationTime),
+                      curve: Curves.bounceInOut,
+                    );
+                  }
+                  if (widget.currentIndex == widget.sliders.length && mounted) {
+                    widget.controller!.animateToPage(
+                      0,
+                      duration: const Duration(
+                          milliseconds: AppConstants.sliderAnimationTime),
+                      curve: Curves.bounceInOut,
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

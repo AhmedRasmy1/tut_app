@@ -19,12 +19,6 @@ class _SplashViewState extends State<SplashView> {
   }
 
   @override
-  void dispose() {
-    super.dispose();
-    movedToNextPage();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return const Scaffold(
       backgroundColor: ColorManager.primary,
@@ -38,8 +32,10 @@ class _SplashViewState extends State<SplashView> {
 
   void movedToNextPage() {
     Future.delayed(const Duration(seconds: AppConstants.splashDelay), () {
-      Navigator.pushNamedAndRemoveUntil(
-          context, RoutesManager.onBoardingRoute, (route) => false);
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+            context, RoutesManager.onBoardingRoute, (route) => false);
+      }
     });
   }
 }
