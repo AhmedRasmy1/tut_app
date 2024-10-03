@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
-
+import 'package:tut_app/domain/models.dart';
+import 'package:tut_app/presentation/onboarding/viewmodel/onboarding_viewmodel.dart';
 import 'package:tut_app/presentation/resources/assets_manager.dart';
 import 'package:tut_app/presentation/resources/color_manager.dart';
-import 'package:tut_app/presentation/resources/constants_manager.dart';
 import 'package:tut_app/presentation/resources/routes_manager.dart';
 import 'package:tut_app/presentation/resources/strings_manager.dart';
 import 'package:tut_app/presentation/resources/values_manager.dart';
@@ -19,33 +19,39 @@ class OnboardingView extends StatefulWidget {
 
 class _OnboardingViewState extends State<OnboardingView> {
   final PageController _pageController = PageController();
-  int _currentIndex = 0;
-  late final List<SliderObject> _sliders = getSliderData();
+  final OnboardingViewModel _onboardingViewModel = OnboardingViewModel();
 
-  List<SliderObject> getSliderData() => [
-        SliderObject(
-          title: AppStrings.onBoardingTitle1,
-          subTitle: AppStrings.onBoardingSubTitle1,
-          image: ImageAssets.onBoardingLogo1,
-        ),
-        SliderObject(
-          title: AppStrings.onBoardingTitle2,
-          subTitle: AppStrings.onBoardingSubTitle2,
-          image: ImageAssets.onBoardingLogo2,
-        ),
-        SliderObject(
-          title: AppStrings.onBoardingTitle3,
-          subTitle: AppStrings.onBoardingSubTitle3,
-          image: ImageAssets.onBoardingLogo3,
-        ),
-        SliderObject(
-          title: AppStrings.onBoardingTitle4,
-          subTitle: AppStrings.onBoardingSubTitle4,
-          image: ImageAssets.onBoardingLogo4,
-        ),
-      ];
+  @override
+  void initState() {
+    _bind(); // استدعاء _bind() هنا لربط الـ ViewModel
+    super.initState();
+  }
+
+  _bind() {
+    _onboardingViewModel.start();
+  }
+
+  @override
+  void dispose() {
+    _onboardingViewModel
+        .dispose(); // استدعاء dispose هنا لإغلاق الـ ViewModel بشكل صحيح
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    return StreamBuilder<SliderViewObject>(
+        stream: _onboardingViewModel.outputSliderViewObject,
+        builder: (context, snapShot) {
+          if (snapShot.hasData) {
+            return _getContentWidget(snapShot.data as SliderViewObject);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        });
+  }
+
+  Widget _getContentWidget(SliderViewObject sliderViewObject) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: ColorManager.white,
@@ -57,16 +63,14 @@ class _OnboardingViewState extends State<OnboardingView> {
       ),
       body: PageView.builder(
         controller: _pageController,
-        itemCount: _sliders.length,
+        itemCount: sliderViewObject.numOfSlides,
         onPageChanged: (index) {
           if (mounted) {
-            setState(() {
-              _currentIndex = index;
-            });
+            _onboardingViewModel.onPageChange(index);
           }
         },
         itemBuilder: (context, index) {
-          return OnBoardingPage(sliderObject: _sliders[index]);
+          return OnBoardingPage(sliderObject: sliderViewObject.sliderObject);
         },
       ),
       bottomSheet: Container(
@@ -90,9 +94,10 @@ class _OnboardingViewState extends State<OnboardingView> {
                 ),
               ),
             ),
-            BottomSheet(
-              sliders: _sliders,
-              currentIndex: _currentIndex,
+            OnboardingBottomSheet(
+              // تغيير اسم الـ Widget لتجنب التضارب
+              sliders: sliderViewObject.numOfSlides,
+              currentIndex: sliderViewObject.currentIndex,
               controller: _pageController,
             ),
           ],
@@ -138,33 +143,24 @@ class OnBoardingPage extends StatelessWidget {
   }
 }
 
-class SliderObject {
-  String title;
-  String subTitle;
-  String image;
-  SliderObject({
-    required this.title,
-    required this.subTitle,
-    required this.image,
-  });
-}
-
-class BottomSheet extends StatefulWidget {
-  const BottomSheet({
+class OnboardingBottomSheet extends StatefulWidget {
+  // تغيير اسم الـ Widget لتجنب التضارب
+  const OnboardingBottomSheet({
     super.key,
     required this.sliders,
     required this.currentIndex,
     this.controller,
   });
-  final List<SliderObject> sliders;
+  final int sliders; // تعديل النوع ليتماشى مع البيانات المستخدمة
   final int currentIndex;
   final PageController? controller;
 
   @override
-  State<BottomSheet> createState() => _BottomSheetState();
+  State<OnboardingBottomSheet> createState() => _OnboardingBottomSheetState();
 }
 
-class _BottomSheetState extends State<BottomSheet> {
+class _OnboardingBottomSheetState extends State<OnboardingBottomSheet> {
+  final OnboardingViewModel _onboardingViewModel = OnboardingViewModel();
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -181,22 +177,13 @@ class _BottomSheetState extends State<BottomSheet> {
               child: GestureDetector(
                 child: SvgPicture.asset(ImageAssets.leftArrowIc),
                 onTap: () {
-                  if (widget.currentIndex > 0 && mounted) {
-                    widget.controller!.animateToPage(
-                      widget.currentIndex - 1,
-                      duration: const Duration(
-                          milliseconds: AppConstants.sliderAnimationTime),
-                      curve: Curves.bounceInOut,
+                  setState(() {
+                    _onboardingViewModel.goPrevious();
+                    widget.controller?.previousPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeIn,
                     );
-                  }
-                  if (widget.currentIndex == -1 && mounted) {
-                    widget.controller!.animateToPage(
-                      widget.sliders.length - 1,
-                      duration: const Duration(
-                          milliseconds: AppConstants.sliderAnimationTime),
-                      curve: Curves.bounceInOut,
-                    );
-                  }
+                  });
                 },
               ),
             ),
@@ -204,7 +191,9 @@ class _BottomSheetState extends State<BottomSheet> {
           //! circle indicator
           Row(
             children: [
-              for (int i = 0; i < widget.sliders.length; i++)
+              for (int i = 0;
+                  i < widget.sliders;
+                  i++) // تعديل النوع ليتماشى مع البيانات
                 Padding(
                   padding: const EdgeInsets.all(AppPadding.p8),
                   child: getProperCircle(i, widget.currentIndex),
@@ -220,23 +209,13 @@ class _BottomSheetState extends State<BottomSheet> {
               child: GestureDetector(
                 child: SvgPicture.asset(ImageAssets.rightArrowIc),
                 onTap: () {
-                  if (widget.currentIndex < widget.sliders.length - 1 &&
-                      mounted) {
-                    widget.controller!.animateToPage(
-                      widget.currentIndex + 1,
-                      duration: const Duration(
-                          milliseconds: AppConstants.sliderAnimationTime),
-                      curve: Curves.bounceInOut,
+                  setState(() {
+                    _onboardingViewModel.goNext();
+                    widget.controller?.nextPage(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeIn,
                     );
-                  }
-                  if (widget.currentIndex == widget.sliders.length && mounted) {
-                    widget.controller!.animateToPage(
-                      0,
-                      duration: const Duration(
-                          milliseconds: AppConstants.sliderAnimationTime),
-                      curve: Curves.bounceInOut,
-                    );
-                  }
+                  });
                 },
               ),
             ),
@@ -252,5 +231,11 @@ class _BottomSheetState extends State<BottomSheet> {
     } else {
       return SvgPicture.asset(ImageAssets.solidCircleIc);
     }
+  }
+
+  @override
+  void dispose() {
+    _onboardingViewModel.dispose();
+    super.dispose();
   }
 }
